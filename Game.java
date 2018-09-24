@@ -2,8 +2,23 @@ import java.util.Random;
 
 class Game extends Thread {
 	static int pop_size = 80;
-	static String[] params = new String[] { "Wins", "Losses", "Ties", "Time"};
+	static String[] params = new String[] { "Wins", "Losses", "Ties", "Time", "Defender", "Aggressor", "FlagAttacker"};
 
+	public static void main(String[] args) throws Exception {
+		double[] random_row = evolveWeights();
+		NeuralAgent agent = new NeuralAgent(random_row);
+		Controller.doBattleNoGui(new ReflexAgent(), agent);
+		addNewStats(random_row, agent.weightsPlusParams);
+		
+		
+		
+	}
+	static void addNewStats(double[] origRow, double[] newRow) {
+		for(int i = 291; i < 291 + params.length; i++)
+			origRow[i] += newRow[i];
+		
+	}
+	
 	static double[] evolveWeights() {
 		// Create a random initial population
 		Random r = new Random();
@@ -16,18 +31,17 @@ class Game extends Thread {
 
 		//Add Params
 		addParams(pop);	
-		
-		pop.printLast5Cols();
-		
-		
+
 		//Divide by random Gaussian
 		for(int i = 0; i < pop.rows(); i++) {
-			for(int k = 0; k < pop.row(0).length; k++)
+			for(int k = 0; k < pop.row(0).length - params.length; k++)
 				pop.row(i)[k] /= r.nextGaussian();
 		}
+		
+		pop.printRow(0);
 
 		// Return an arbitrary member from the population
-		return extractWeights(pop, 0);
+		return pop.row(0);
 	}
 	
 	static void addParams(Matrix pop) {
@@ -35,12 +49,6 @@ class Game extends Thread {
 			pop.addCol(params[i]);
 	}
 
-
-	public static void main(String[] args) throws Exception {
-		double[] w = evolveWeights();
-//		Controller.doBattle(new ReflexAgent(), new NeuralAgent(w));
-	}
-	
 	static double[] extractWeights(Matrix pop, int rowNum) {
 		double[] row = pop.row(rowNum);
 		double[] weights = new double[291];

@@ -180,7 +180,8 @@ public class Matrix {
 				System.out.print(row[k] + " ");
 			}
 			System.out.println();
-		}		
+		}
+		System.out.println();
 	}
 	public void printRow(double[] row, PrintStream os) {
 		if(row.length != cols())
@@ -236,12 +237,24 @@ public class Matrix {
 		}
 	}
 	
+	//!!!!JON
 	public void printCol(int c) {
 		System.out.println(this.m_attr_name.get(c));
 		for(int i = 0; i < this.rows(); i++)
 			System.out.println(this.row(i)[c]);
 	}
 
+	public void printRow(int r) {
+		for(int c = 0; c < this.cols(); c++)
+			System.out.print(this.row(r)[c] + " ");
+		System.out.print("\n\n");
+	}
+
+	public void printAttrNames() {
+		for(int i = 0; i < this.cols(); i++)
+			System.out.print(m_attr_name.get(i) + " ");
+		System.out.println();
+	}
 	/// Saves the matrix to an ARFF file
 	public void saveARFF(String filename) {		
 		PrintWriter os = null;
@@ -331,11 +344,11 @@ public class Matrix {
 	//!!!!JON: Add a column with a new name;
 	public void addCol(String colName) {
 		Matrix matTmp = new Matrix(this);
-		this.newColumn("agentNum");
+		this.newColumn(colName);
 		this.newRows(matTmp.rows());
 		this.copyBlock(0, 0, matTmp, 0, 0, matTmp.rows(), matTmp.cols());
 		for(int i = 0; i < this.rows(); i++)
-			this.m_data.get(i)[this.cols()-1] = UNKNOWN_VALUE;
+			this.m_data.get(i)[this.cols()-1] = 0.0;
 	}
 
 	/// Adds a column with the specified name

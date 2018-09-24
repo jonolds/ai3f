@@ -1,9 +1,9 @@
 class NeuralAgent implements IAgent {
 	int index; // a temporary value used to pass values around
 	NeuralNet nn;
-	double[] in;
+	double[] in, weights, weightsPlusParams;
 
-	NeuralAgent(double[] weights) {
+	NeuralAgent(double[] weightsPlusParams) {
 		in = new double[20];
 		nn = new NeuralNet();
 		nn.layers.add(new LayerLinear(in.length, 8));
@@ -12,7 +12,17 @@ class NeuralAgent implements IAgent {
 		nn.layers.add(new LayerTanh(10));
 		nn.layers.add(new LayerLinear(10, 3));
 		nn.layers.add(new LayerTanh(3));
+		
+		this.weightsPlusParams = weightsPlusParams;
+		this.weights = extractWeights(weightsPlusParams);
 		setWeights(weights);
+	}
+	
+	double[] extractWeights(double[] w_p_p) {
+		weights = new double[291];
+		for(int i = 0; i < 291; i++)
+			weights[i] = w_p_p[i];
+		return weights;
 	}
 
 	public void reset() {
@@ -181,12 +191,18 @@ class NeuralAgent implements IAgent {
 
 		// Do it
 		for(int i = 0; i < 3; i++) {
-			if(out[i] < -0.333)
+			if(out[i] < -0.333) {
+				weightsPlusParams[weights.length + 4] += 1;
 				beDefender(m, i);
-			else if(out[i] > 0.333)
+			}
+			else if(out[i] > 0.333) {
+				weightsPlusParams[weights.length + 5] += 1;
 				beAggressor(m, i);
-			else
+			}
+			else {
+				weightsPlusParams[weights.length + 6] += 1;
 				beFlagAttacker(m, i);
+			}
 		}
 	}
 }
