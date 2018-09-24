@@ -183,6 +183,25 @@ public class Matrix {
 		}
 		System.out.println();
 	}
+	
+	public void printLastNum(int num) {
+		for(int i = 0; i < this.rows(); i++) {
+			for(int k = this.cols() - num; k < this.cols(); k++) {
+				double[] row = this.row(i);
+				System.out.print(row[k] + " ");
+			}
+			System.out.println();
+		}
+		System.out.println();
+	}
+	
+	public void printLastNumColsForRow(int num, int rowNum) {
+		double[] row = this.row(rowNum);
+		for(int i = this.cols() - num; i < this.cols(); i++) {
+			System.out.print(row[i] + " ");
+		}
+		System.out.println();
+	}
 	public void printRow(double[] row, PrintStream os) {
 		if(row.length != cols())
 			throw new RuntimeException("Unexpected row size");

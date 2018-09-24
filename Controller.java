@@ -44,7 +44,7 @@ class Controller implements MouseListener {
 			return 0;
 	}
 	
-	static int[] rankAgents(ArrayList<IAgent> agents, int[] wins, boolean verbose) throws Exception {
+	static int[] rankAgents(ArrayList<IAgent> agents, int[] wins) throws Exception {
 		// Make every agent battle against every other agent
 		System.out.println("\nBattles:");
 //		int n = agents.size() * (agents.size() - 1);
@@ -52,18 +52,18 @@ class Controller implements MouseListener {
 			for(int j = 0; j < agents.size(); j++) {
 				if(j == i)
 					continue;
-				System.out.print("	" + agents.get(i).getClass().getName() + " vs " + agents.get(j).getClass().getName() + ". Winner: ");
+//				System.out.println("	#" + i + " vs #" + j + ". Winner: ");
 				int outcome = Controller.doBattleNoGui(agents.get(i), agents.get(j));
 				if(outcome > 0) {
-					System.out.println(agents.get(i).getClass().getName());
+					System.out.println("	#" + i + " vs #" + j + ". Winner: #" + i);
 					wins[i]++;
 				}
 				else if(outcome < 0) {
-					System.out.println(agents.get(j).getClass().getName());
+					System.out.println("	#" + i + " vs #" + j + ". Winner: #" + j);
 					wins[j]++;
 				}
 				else {
-					System.out.println("Tie");
+//					System.out.println("Tie");
 				}
 			}
 		}
@@ -88,7 +88,7 @@ class Controller implements MouseListener {
 
 	static void doTournament(ArrayList<IAgent> agents) throws Exception {
 		int[] wins = new int[agents.size()];
-		int[] agentIndexes = rankAgents(agents, wins, true);
+		int[] agentIndexes = rankAgents(agents, wins);
 		System.out.println("\nRankings:");
 		for(int i = 0; i < agents.size(); i++) {
 			int a = agentIndexes[i];
