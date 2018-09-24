@@ -45,7 +45,6 @@ class Controller implements MouseListener {
 	}
 	
 	static int[] rankAgents(ArrayList<IAgent> agents, int[] wins, boolean verbose) throws Exception {
-
 		// Make every agent battle against every other agent
 		System.out.println("\nBattles:");
 //		int n = agents.size() * (agents.size() - 1);

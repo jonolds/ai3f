@@ -26,7 +26,7 @@ class Game extends Thread {
 		for(int i = 0; i < pop_size; i++) {
 			double[] chromosome = pop.row(i);
 			for(int j = 0; j < chromosome.length; j++)
-				chromosome[j] = 0.03 * r.nextGaussian();
+				chromosome[j] = 0.6 * r.nextGaussian();
 		}
 
 		//Add Params
@@ -37,7 +37,6 @@ class Game extends Thread {
 			for(int k = 0; k < pop.row(0).length - params.length; k++)
 				pop.row(i)[k] /= r.nextGaussian();
 		}
-		
 		pop.printRow(0);
 
 		// Return an arbitrary member from the population
