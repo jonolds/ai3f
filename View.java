@@ -7,11 +7,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.ArrayList;
+
 import javax.imageio.ImageIO;
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
@@ -66,7 +63,6 @@ public class View extends JFrame implements ActionListener {
 	class MyPanel extends JPanel {
 		public static final int FLAG_IMAGE_HEIGHT = 25;
 		Image image_robot_blue, image_robot_red, image_broken, image_flag_blue, image_flag_red;
-		MySoundClip sound_doing;
 
 		MyPanel() throws Exception {
 			this.image_robot_blue = ImageIO.read(new File("robot_blue.png"));
@@ -74,7 +70,6 @@ public class View extends JFrame implements ActionListener {
 			this.image_broken = ImageIO.read(new File("broken.png"));
 			this.image_flag_blue = ImageIO.read(new File("flag_blue.png"));
 			this.image_flag_red = ImageIO.read(new File("flag_red.png"));
-			this.sound_doing = new MySoundClip("metal_doing.wav", 3);
 		}
 
 		private void drawTerrain(Graphics g) {
@@ -156,7 +151,6 @@ public class View extends JFrame implements ActionListener {
 				Model.Bomb b = bombs.get(i);
 				int x = (int)b.getX();
 				int y = (int)b.getY();
-				if(b.isDetonating()) { sound_doing.play(); }
 				g.setColor(new Color(128, 0, 64));
 				int r = (int)(b.position - b.distance);
 				g.drawOval(x - r, y - r, 2 * r, 2 * r);
@@ -228,27 +222,6 @@ public class View extends JFrame implements ActionListener {
 			drawSprites(g);
 			drawBombs(g);
 			drawTime(g);
-		}
-	}
-
-	class MySoundClip {
-		Clip[] clips;
-		int pos;
-		MySoundClip(String filename, int copies) throws Exception {
-			clips = new Clip[copies];
-			for(int i = 0; i < copies; i++) {
-				AudioInputStream inputStream = AudioSystem.getAudioInputStream(new File(filename));
-				DataLine.Info info = new DataLine.Info(Clip.class, inputStream.getFormat());
-				clips[i] = (Clip)AudioSystem.getLine(info);
-				clips[i].open(inputStream);
-			}
-			pos = 0;
-		}
-		void play() {
-			clips[pos].setFramePosition(0);
-			clips[pos].loop(0);
-			if(++pos >= clips.length)
-				pos = 0;
 		}
 	}
 }

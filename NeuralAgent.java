@@ -2,6 +2,7 @@ class NeuralAgent implements IAgent {
 	int index; // a temporary value used to pass values around
 	NeuralNet nn;
 	double[] in;
+	int agent_num = -1;
 
 	NeuralAgent(double[] weights) {
 		in = new double[20];
@@ -13,6 +14,11 @@ class NeuralAgent implements IAgent {
 		nn.layers.add(new LayerLinear(10, 3));
 		nn.layers.add(new LayerTanh(3));
 		setWeights(weights);
+	}
+	
+	NeuralAgent(double[] weights, int num) {
+		this(weights);
+		this.agent_num = num;
 	}
 
 	public void reset() {

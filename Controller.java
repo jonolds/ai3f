@@ -1,10 +1,11 @@
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.LinkedList;
+
 import javax.swing.Timer;
 
-class Controller implements MouseListener {
+class Controller extends MouseAdapter {
 	public static final long MAX_ITERS = 18000; // The maximum length of a game in frames (At 20 frames/sec, 18000 frames takes 15 minutes)
 
 	private Model model; // holds all the game data
@@ -28,20 +29,15 @@ class Controller implements MouseListener {
 		c.view = new View(c, c.model, ss); // instantiates a JFrame, which spawns another thread to pump events and keeps the whole program running until the JFrame is closed
 		new Timer(20, c.view).start(); // creates an ActionEvent at regular intervals, which is handled by View.actionPerformed
 	}
-
 	
-	static int doBattleNoGui(IAgent blue, IAgent red) throws Exception {
-		Object ss = new Object();
-		Controller c = new Controller(ss, blue, red);
-		c.init();
-		while(c.update()) { }
-		c.model.setPerspectiveBlue(c.secret_symbol);
-		if(c.model.getFlagEnergySelf() < 0.0f && c.model.getFlagEnergyOpponent() >= 0.0f)
-			return -1;
-		else if(c.model.getFlagEnergyOpponent() < 0.0f && c.model.getFlagEnergySelf() >= 0.0f)
-			return 1;
-		else
-			return 0;
+	static void doTournament(ArrayList<IAgent> agents) throws Exception {
+		int[] wins = new int[agents.size()];
+		int[] agentIndexes = rankAgents(agents, wins);
+		System.out.println("\nRankings:");
+		for(int i = 0; i < agents.size(); i++) {
+			int a = agentIndexes[i];
+			System.out.println("	#" + Integer.toString(i + 1) + ". " + agents.get(a).getClass().getName() + " (" + Integer.toString(wins[a]) + " wins)");
+		}
 	}
 	
 	static int[] rankAgents(ArrayList<IAgent> agents, int[] wins) throws Exception {
@@ -85,17 +81,21 @@ class Controller implements MouseListener {
 		}
 		return agentIndexes;
 	}
-
-	static void doTournament(ArrayList<IAgent> agents) throws Exception {
-		int[] wins = new int[agents.size()];
-		int[] agentIndexes = rankAgents(agents, wins);
-		System.out.println("\nRankings:");
-		for(int i = 0; i < agents.size(); i++) {
-			int a = agentIndexes[i];
-			System.out.println("	#" + Integer.toString(i + 1) + ". " + agents.get(a).getClass().getName() + " (" + Integer.toString(wins[a]) + " wins)");
-		}
-	}
 	
+	static int doBattleNoGui(IAgent blue, IAgent red) throws Exception {
+		Object ss = new Object();
+		Controller c = new Controller(ss, blue, red);
+		c.init();
+		while(c.update()) { }
+		c.model.setPerspectiveBlue(c.secret_symbol);
+		if(c.model.getFlagEnergySelf() < 0.0f && c.model.getFlagEnergyOpponent() >= 0.0f) 
+			return -1;	//Second argument "red" won
+		else if(c.model.getFlagEnergyOpponent() < 0.0f && c.model.getFlagEnergySelf() >= 0.0f)
+			return 1;	//First argument "blue" won
+		else
+			return 0;
+	}
+
 	//CONSTRUCT / INIT / TIME
 	Controller(Object secret_symbol, IAgent blueAgent, IAgent redAgent) {
 		this.secret_symbol = secret_symbol;
@@ -208,8 +208,4 @@ class Controller implements MouseListener {
 				this.view.doInstantReplay(e.getX());
 		}
 	}
-	public void mouseReleased(MouseEvent e) {    }
-	public void mouseEntered(MouseEvent e) {    }
-	public void mouseExited(MouseEvent e) {    }
-	public void mouseClicked(MouseEvent e) {    }
 }

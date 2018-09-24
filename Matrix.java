@@ -262,7 +262,7 @@ public class Matrix {
 		for(int i = 0; i < this.rows(); i++)
 			System.out.println(this.row(i)[c]);
 	}
-
+	//!!!!JON
 	public void printRow(int r) {
 		for(int c = 0; c < this.cols(); c++)
 			System.out.print(this.row(r)[c] + " ");
