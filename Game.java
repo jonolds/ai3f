@@ -13,13 +13,11 @@ class Game extends Thread {
 			for(int j = 0; j < chromosome.length; j++)
 				chromosome[j] = 0.03 * r.nextGaussian();
 		}
-		
-		System.out.println(pop.row(0)[1]);
-		pop.row(0)[1] = 9.9;
-		System.out.println(pop.row(0)[1]);
-		
+
 		//Add Params
 		addParams(pop);	
+		
+		pop.printLast5Cols();
 		
 		
 		//Divide by random Gaussian

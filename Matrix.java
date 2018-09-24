@@ -74,6 +74,7 @@ public class Matrix {
 			list.add(Vec.marshal(row(i)));
 		return list;
 	}
+	
 
 	/// Loads the matrix from an ARFF file
 	public void loadARFF(String filename) {
@@ -171,6 +172,16 @@ public class Matrix {
 		return sb.toString();
 	}
 
+	//!!!!JON: 
+	public void printLast5Cols() {
+		for(int i = 0; i < this.rows(); i++) {
+			for(int k = this.cols() -5; k < this.cols(); k++) {
+				double[] row = this.row(i);
+				System.out.print(row[k] + " ");
+			}
+			System.out.println();
+		}		
+	}
 	public void printRow(double[] row, PrintStream os) {
 		if(row.length != cols())
 			throw new RuntimeException("Unexpected row size");
@@ -317,7 +328,7 @@ public class Matrix {
 		}
 	}
 	
-	//Add a column with a new name;
+	//!!!!JON: Add a column with a new name;
 	public void addCol(String colName) {
 		Matrix matTmp = new Matrix(this);
 		this.newColumn("agentNum");
@@ -368,6 +379,11 @@ public class Matrix {
 			newColumn();
 	}
 
+	//!!!!JON: 
+	public void setColValues(int col, double value) {
+		for(int i = 0; i < this.rows(); i++)
+			this.m_data.get(i)[col] = value;
+	}
 	/// Returns the index of the specified value in the specified column.
 	/// If there is no such value, adds it to the column.
 	public int findOrCreateValue(int column, String val) {
