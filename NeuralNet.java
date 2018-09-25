@@ -277,8 +277,7 @@ class LayerTanh extends Layer {
 	double[] forwardProp(double[] in) {
 		if(in.length != outputCount())
 			throw new IllegalArgumentException("size mismatch. " + Integer.toString(in.length) + " != " + Integer.toString(outputCount()));
-		for(int i = 0; i < activation.length; i++)
-			activation[i] = Math.tanh(in[i]);
+		for(int i = 0; i < activation.length; i++) activation[i] = Math.tanh(in[i]);
 		return activation;
 	}
 
