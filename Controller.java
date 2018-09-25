@@ -44,17 +44,17 @@ class Controller extends MouseAdapter {
 		// Make every agent battle against every other agent
 		System.out.println("\nBattles:");
 //		int n = agents.size() * (agents.size() - 1);
-		for(int i = 0; i < agents.size(); i++) {
+		for(int i = 0; i < agents.size()/2; i++) {
 			for(int j = 0; j < agents.size(); j++) {
 				if(j == i)
 					continue;
 //				System.out.println("	#" + i + " vs #" + j + ". Winner: ");
-				int outcome = Controller.doBattleNoGui(agents.get(i), agents.get(j));
-				if(outcome > 0) {
+				int[] outcome = Controller.doBattleNoGui(agents.get(i), agents.get(j));
+				if(outcome[0] > 0) {
 					System.out.println("	#" + i + " vs #" + j + ". Winner: #" + i);
 					wins[i]++;
 				}
-				else if(outcome < 0) {
+				else if(outcome[0] < 0) {
 					System.out.println("	#" + i + " vs #" + j + ". Winner: #" + j);
 					wins[j]++;
 				}
@@ -82,18 +82,22 @@ class Controller extends MouseAdapter {
 		return agentIndexes;
 	}
 	
-	static int doBattleNoGui(IAgent blue, IAgent red) throws Exception {
+	static int[] doBattleNoGui(IAgent blue, IAgent red) throws Exception {
 		Object ss = new Object();
 		Controller c = new Controller(ss, blue, red);
 		c.init();
 		while(c.update()) { }
 		c.model.setPerspectiveBlue(c.secret_symbol);
+		
+		int[] result = new int[2];
+		result[1] = (int)c.getIter();
 		if(c.model.getFlagEnergySelf() < 0.0f && c.model.getFlagEnergyOpponent() >= 0.0f) 
-			return -1;	//Second argument "red" won
+			result[0] = -1;	//Second argument "red" won
 		else if(c.model.getFlagEnergyOpponent() < 0.0f && c.model.getFlagEnergySelf() >= 0.0f)
-			return 1;	//First argument "blue" won
+			result[0] = 1;	//First argument "blue" won
 		else
-			return 0;
+			result[0] = 0;
+		return result;
 	}
 
 	//CONSTRUCT / INIT / TIME

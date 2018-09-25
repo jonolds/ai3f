@@ -378,6 +378,10 @@ public class Matrix {
 		m_enum_to_str.add(new HashMap<Integer, String>());
 	}
 
+	//!!!!JON
+	public int colNamed(String name) {
+		return m_attr_name.indexOf(name);
+	}
 	/// Adds a column to this matrix with the specified number of values. (Use 0 for
 	/// a continuous attribute.) This method also sets the number of rows to 0, so
 	/// you will need to call newRow or newRows when you are done adding columns.
@@ -532,6 +536,16 @@ public class Matrix {
 		copyBlock(0, 0, that, 0, 0, that.rows(), that.cols());
 	}
 	
+	//!!!!JON:
+	public ArrayList<double[]> getBest() {
+		double mostWins = this.columnMax(291);
+		ArrayList<double[]> cols = new ArrayList<>();
+		for(int i = 0; i < this.rows(); i++)
+			if(this.row(i)[291] == mostWins)
+				cols.add(this.row(i));
+		return cols;
+	}
+
 	/// Returns the mean of the elements in the specified column. (Elements with the value UNKNOWN_VALUE are ignored.)
 	public double columnMean(int col) {
 		double sum = 0.0;
