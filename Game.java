@@ -52,24 +52,20 @@ class Game extends Thread {
 				trainElite(d);
 		}
 		
-		for(int i = 0; i < num_tourneys; i++) {
-			System.out.println(i);
-			HalfTourney ht = new HalfTourney();
-			ht.bestFightBest();
-			checkIfWinning();
-		}
-
 		ArrayList<double[]> bestSet = pop.getBest();
 		System.out.println("bestSet size: " + bestSet.size() + "  # wins: " + bestSet.get(0)[291]);
 		return cleanWts(bestSet.get(0));
 	}
 	
 	void trainElite(double d) throws Exception {
+		pop.sort(pop.colNamed("Wins"), true);					//Sort the Matrix to pick the best
+		double[] startingFitness = new double[pop_size/5];		
 		
-		pop.sort(pop.colNamed("Wins"), true);
-		for(int i = 0; i < pop_size/5; i++) {
+		for(int i = 0; i < pop_size/5; i++) {					//Get a baseline from all 10
 			int[] outcome = battle(new ReflexAgent(), new NeuralAgent(cleanWts(pop.row(i))));
+			pop.row(i)[pop.colNamed("Wins")] += (outcome[0] == -1) ? 1.0: 0.0;
 			pop.row(i)[pop.colNamed("Iters")] += outcome[1];
+			startingFitness[i] = outcome[1];					//Only off iters. A win ends the game.
 		}
 			
 	}
@@ -234,111 +230,6 @@ class Game extends Thread {
 		g.init();
 	}
 	Game() { r = new Random();  }
-	public class HalfTourney implements Runnable {
-		ArrayList<Integer> shuf = new ArrayList<>();
-		ArrayList<Integer> shufFirst = new ArrayList<>();
-		ArrayList<Integer> shufSecond = new ArrayList<>();
-		ArrayList<IAgent> agents;
-		Thread t1, main;
-		int count = 0;
-		int[] tWins = new int[pop_size];
-		
-		void bestFightBest() throws Throwable {
-			for(int i = 0; i < pop_size/2; i++) {
-				for(int j = 0; j < shufSecond.size(); j++) {
-					if(shufFirst.get(j) == shufSecond.get(i))
-						continue;
-					Controller.doBattleNoGui(new NeuralAgent(pop.row(shufFirst.get(j))), new NeuralAgent(pop.row(shufSecond.get(i))));
-				}
-			}
-		}
-		
-		HalfTourney() {
-			agents = popToAgents();
-			for(int i = 0; i < pop_size; i++)
-				shuf.add(i);
-			Collections.shuffle(shuf);
-			for(int i = 0; i < pop_size/2; i++)
-				shufFirst.add(shuf.get(i));
-			for(int i = pop_size/2; i <pop_size; i++)
-				shufSecond.add(shuf.get(i));
-			main = Thread.currentThread();
-			t1 = new Thread(this, "first");
-			t1.start();
-			run();
-	    }
-
-	    @Override
-	    public void run() {
-	    	double d;
-	    	ArrayList<IAgent> agents = popToAgents();
-	    	ArrayList<Integer> smallShuf = new ArrayList<>();
-	    	if(currentThread().getName() == "first")
-	    		smallShuf = shufFirst;
-	    	else
-	    		smallShuf = shufSecond;
-	    	
-	    	ArrayList<Integer> q = new ArrayList<>();
-			q.addAll(smallShuf);
-	    	
-	    	for(int z = 0; z < pop_size/2; z++) {
-				Collections.shuffle(smallShuf);
-				for(int i = 0; i < pop_size/2; i++) {
-					int a = q.get(i);
-					int b = smallShuf.get(i);
-					if(a == b) //agent i IS agent j - Skip this cycle
-						continue;
-//					System.out.println(Thread.currentThread().getName() + "  " + a + "    " + b);
-					
-					int outcome[] = new int[2];
-					try {
-						outcome = Controller.doBattleNoGui(agents.get(a), agents.get(b));
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-					if(outcome[0] > 0) {		//agent a won
-//						System.out.println("b lost  (" + b + ")");
-						pop.row(a)[291]++;
-						killAndBreed((r.nextDouble() < win_survive_rate) ? b: a);
-					}
-					else if(outcome[0] < 0) {	//agent b won
-//						System.out.println("a lost  (" + a + ")");
-						pop.row(b)[291]++;
-						killAndBreed((r.nextDouble() < win_survive_rate) ? a: b);
-					}
-					else {
-//						System.out.println();
-					}
-					
-					//MUTATE SOMETIMES
-					if((d = r.nextDouble()) < mutation_rate)
-						mutate(d);
-					
-				}
-			}
-	    	if(currentThread().getName() == "first")
-				try {
-					t1.join();
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-    	
-	    	while(Thread.currentThread().getName() != "first" && t1.isAlive()) {
-				try {
-					Thread.sleep(500);
-				} 
-				catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-	    	}
-	    	try {
-				bestFightBest();
-			} catch (Throwable e) {
-				e.printStackTrace();
-			}
-	    	
-	    }
-	}
 }
 
 interface IAgent {

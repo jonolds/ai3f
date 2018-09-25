@@ -545,6 +545,7 @@ public class Matrix {
 				cols.add(this.row(i));
 		return cols;
 	}
+	
 
 	/// Returns the mean of the elements in the specified column. (Elements with the value UNKNOWN_VALUE are ignored.)
 	public double columnMean(int col) {
