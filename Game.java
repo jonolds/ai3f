@@ -37,44 +37,43 @@ class Game {
 	}
 
 	double[] evolve() throws Throwable {
-		
-		//CREATE A RANDOM INITIAL POPULATION
-		mat = new Matrix(mat_size, 291);
-		for(int i = 0; i < mat_size; i++)
-			for(int j = 0; j < num_genes; j++)
-				mat(i)[j] = 0.6 * r.nextGaussian();
-		
-		//ADD EXTRA PARAM COLUMNS TO TRACK AGENT FITNESS
-		addParams();
-
-		//TRAIN POPULATION 
-		for(int i = 0; i < 1000000000; i++) {
-			if(i%20 == 0) { 
-				printTopFitness();
-				updateSurvival();
-			}	//SCORE FITNESS every 1000 cycles
-			if(beatReflex)
-				return winningCombo;
-
-			//Get a random double to decide next action
-			double d = r.nextDouble();
-
-			if(d < .4)					//MUTATE 40%
-				mutate(d);
-			else if (d < .7)			//TOURNAMENT 30%
-				scrimmage(d);
-			else if (d < 1.0)			//TRAINELITE 30%
-				trainVsReflex(d);
+		for(double k = 0.03; k < .9; k+=.03) {
+			//CREATE A RANDOM INITIAL POPULATION
+			mat = new Matrix(mat_size, 291);
+			for(int i = 0; i < mat_size; i++)
+				for(int j = 0; j < num_genes; j++)
+					mat(i)[j] = k * r.nextGaussian();
+			
+			//ADD EXTRA PARAM COLUMNS TO TRACK AGENT FITNESS
+			addParams();
+			
+			System.out.println("k: " + k);
+			long start = Instant.now().getEpochSecond();
+			
+			//TRAIN POPULATION 
+			for(int i = 0; i < 1000000000; i++) {	//SCORE FITNESS every 1000 cycles
+				if(i%20 == 0) { 
+					printTopFitness();
+					updateSurvival();
+				}
+				if(beatReflex) {
+					System.out.println("   " + (start - Instant.now().getEpochSecond()));
+					break;
+//					return winningCombo;
+				}
+	
+				//Get a random double to decide next action
+				double d = r.nextDouble();
+	
+				if(d < .4)					//MUTATE 40%
+					mutate(d);
+				else if (d < .7)			//TOURNAMENT 30%
+					scrimmage(d);
+				else if (d < 1.0)			//TRAINELITE 30%
+					trainVsReflex(d);
+			}
 		}
-
-//		for(int i = 0; i < num_tourneys; i++) {
-//			System.out.println(i);
-//			checkIfWinning();
-//		}
-
-		ArrayList<double[]> bestSet = mat.getBest();
-		System.out.println("bestSet size: " + bestSet.size() + "  # wins: " + bestSet.get(0)[291]);
-		return getWts(bestSet.get(0));
+		return getWts(mat(0));
 	}
 
 	void updateFitness(int i) {
@@ -85,21 +84,21 @@ class Game {
 	}
 
 	//MUTATE
-	void mutate(double d) {					//d < .4
-		d /= .4;							//Convert d to a double between 0.0 and 1.0
+	void mutate(double d) {			//d < .4
+		d /= .4;					//Convert d to a double between 0.0 and 1.0
 		
-		if(d < .05)							//CATASTROPHIC 5% of Mutations
+		if(d < .05)					//CATASTROPHIC 5% of Mutations
 			catastrophic(d);
 		
 		int row_num = r.nextInt(mat_size);
 		double mutation_level = ave_mut_dev * r.nextGaussian();
 		mat(row_num)[r.nextInt(num_genes)] += mutation_level;
 	}
+	
 	void catastrophic(double d) {
-		
 //		double extra_toes = mat(r.nextInt(mat_size));
-		
 	}
+	
 	
 	//BATTLE
 	void scrimmage(double d) throws Exception {
@@ -109,49 +108,40 @@ class Game {
 			results(a, i, outcome);
 		}
 	}
+	
 	void trainVsReflex(double d) throws Exception {
-//		double start = (double)Instant.now().toEpochMilli();
 		mat.sort(mat.col("Won"), true);
 		for(int i = 0; i < mat_size; i++) {
 			int[] outcome = battle(-1, i);
-			mat(i)[mat.col("Iters")] += outcome[1];
-			if(outcome[0] != 0)
+			if(outcome[0] != 0) {
 				mat(i)[(outcome[0] == -1) ? mat.col("Won") : mat.col("Lost")]++;
+				mat(i)[mat.col("Iters")] += outcome[1];
+			}
 			updateFitness(i);
 			if(outcome[0] == -1) {
 				System.out.println("Beat Reflex    Iters: " + outcome[1]);
-//				beatReflex = true;
+				beatReflex = true;
 				winningCombo = getWts(mat(i));
 				break;
 			}
 				
 		}
-//		double elapsed = (double)((int)(10*(Instant.now().toEpochMilli() - start))/1000)/10;
-//		System.out.println("trainVsReflex: " + elapsed + "s    Total Battles: " + battles);
 	}
+	
 	void results(int a, int b, int[] outcome) {
-		int iters_col = mat.col("Iters");
 		if(outcome[0] != 0) {
 			double d = r.nextDouble();
 			int winner = (outcome[0] == -1) ? a : b;
 			int loser = (outcome[0] == -1) ? b : a;
 			int lived = (d < mat(loser)[mat.col("SurviveLoss")]) ? b : a;
-			if(lived == winner) 
-				mat(lived)[mat.col("Won")]++;
-			else
-				mat(lived)[mat.col("Lost")]++;
-			mat(lived)[mat.col("Fitness")] = mat(lived)[mat.col("Won")]/mat(lived)[iters_col];
-			mat(lived)[iters_col] += outcome[1];
+			mat(lived)[mat.col((lived == winner)? "Won" : "Lost")]++;
+			mat(lived)[mat.col("Fitness")] = mat(lived)[mat.col("Won")]/mat(lived)[mat.col("Iters")];
+			mat(lived)[mat.col("Iters")] += outcome[1];
 			killAndBreed((lived == loser) ? winner : loser);
 			updateFitness(lived);
 		}
-		else {
-//			mat(a)[iters_col] += outcome[1];
-//			mat(b)[iters_col] += outcome[1];
-//			updateFitness(a);
-//			updateFitness(b);
-		}
 	}
+	
 	void killAndBreed(int kill_num) {
 		//Pick 9 random parent candidates. possible_parents[0] is parent a
 		int[] possible_parents = new int[dating_pool_size + 1];
@@ -182,20 +172,12 @@ class Game {
 			mat(kill_num)[i] = 0.0;
 		mat(kill_num)[mat.col("SurviveLoss")] = 0.75;		//WIN_SURVIVE back to default
 	}
+	
 	int[] battle(int blue, int red) throws Exception {		//SHORTCUT TO Controller.doBattle
 		battles++;
 		IAgent a = (blue == -1) ? new ReflexAgent() : new NeuralAgent(getWts(blue));
 		IAgent b = new NeuralAgent(getWts(red));
 		return Controller.doBattleNoGui(a, b);
-	}
-	
-	public boolean checkIfWinning() throws Throwable {
-		ArrayList<double[]> bestSet = mat.getBest();
-		double[] weights = getWts(bestSet.get(r.nextInt(bestSet.size())));
-		Long start = Instant.now().toEpochMilli();
-		int[] outcome = Controller.doBattleNoGui(new ReflexAgent(), new NeuralAgent(weights));
-		System.out.println("Outcome vs blue: " + outcome + "   Time:" + Long.toString(Instant.now().toEpochMilli() - start));
-		return (outcome[0] == -1);
 	}
 	
 	void updateSurvival() {
