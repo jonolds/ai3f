@@ -18,7 +18,7 @@ public class Matrix {
 	/// Used to represent elements in the matrix for which the value is not known.
 	public static final double UNKNOWN_VALUE = -1e308; 
 	// Data
-	private ArrayList<double[]> m_data = new ArrayList<double[]>(); //matrix elements
+	ArrayList<double[]> m_data = new ArrayList<double[]>(); //matrix elements
 	// Meta-data
 	private String m_filename;                          // the name of the file
 	private ArrayList<String> m_attr_name;                 // the name of each attribute (or column)
@@ -636,6 +636,19 @@ public class Matrix {
 			double[] dest = this.row(destRow + i);
 			for(int j = 0; j < colCount; j++)
 				dest[destCol + j] = source[colBegin + j];
+		}
+	}
+	//!!!!JON
+	void copyMatrix(Matrix that, int x, int y, int width, int height) {
+		this.m_filename = that.m_filename;
+		this.m_attr_name = new ArrayList<String>();
+		this.m_str_to_enum = new ArrayList<HashMap<String, Integer>>();
+		this.m_enum_to_str = new ArrayList<HashMap<Integer, String>>();
+		this.setSize(height, width);
+		for(int i = 0; i < height; i++) {
+			for(int k = 0; k < width; k++) {
+				this.row(i)[k] = that.row(i)[x-1];
+			}
 		}
 	}
 
