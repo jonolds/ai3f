@@ -259,8 +259,8 @@ public class Matrix {
 	//!!!!JON
 	public void printCol(int c) {
 		System.out.println(this.m_attr_name.get(c));
-		for(int i = 0; i < this.rows(); i++)
-			System.out.println(this.row(i)[c]);
+		for(double[] d : m_data)
+			System.out.println(d[c]);
 	}
 	//!!!!JON
 	public void printRow(int r) {
