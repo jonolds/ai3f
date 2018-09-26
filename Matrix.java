@@ -379,7 +379,7 @@ public class Matrix {
 	}
 
 	//!!!!JON
-	public int colNamed(String name) {
+	public int col(String name) {
 		return m_attr_name.indexOf(name);
 	}
 	/// Adds a column to this matrix with the specified number of values. (Use 0 for
@@ -582,7 +582,18 @@ public class Matrix {
 		
 		return max;
 	}
-
+	//!!!!JON
+	public int columnMaxIndex(int col) {
+		int current_column_max = -1;
+		double max = -Double.MAX_VALUE;
+		for(int i = 0; i < rows(); i++) {
+			double val = row(i)[col];
+			if (val != UNKNOWN_VALUE)
+				max = Math.max(max, val);
+		}
+		
+		return current_column_max;
+	}
 	/// Returns the most common value in the specified column. (Elements with the value UNKNOWN_VALUE are ignored.)
 	public double mostCommonValue(int col) {
 		HashMap<Double, Integer> counts = new HashMap<Double, Integer>();
@@ -606,7 +617,7 @@ public class Matrix {
 		}
 		return value;
 	}
-
+	
 	/// Copies the specified rectangular portion of that matrix, and puts it in the specified location in this matrix.
 	public void copyBlock(int destRow, int destCol, Matrix that, int rowBegin, int colBegin, int rowCount, int colCount) {
 		if (destRow + rowCount > this.rows() || destCol + colCount > this.cols())
