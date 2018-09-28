@@ -1,0 +1,286 @@
+class Game {
+	Matrix mat;
+	Random r;
+	String timestamp;
+	static final int num_genes = 291, mat_size = 60;
+	static final String[] params = new String[] { "Won", "Lost", "Iters", "Fitness", "SurviveLoss", "RefWins", "RefLosses", "RefIters"};
+	static final int max_param_len = 12;
+	//TOURNEY RULES
+	static final int num_tourneys = 80;
+	static final double init_survive_loss_rate = .25;
+	static final double survive_loss_max = .35;
+	static final double survive_loss_min = .15;
+	static final int max_iters_to_declare_win = 3500;
+	//MUTATION
+	static final double mutation_rate = .15;
+	static final double ave_mut_dev = .4;
+	//BREEDING
+	static final int dating_pool_size = 8;
+	ArrayList<double[]> winners = new ArrayList<>();
+	ArrayList<Integer> tracker = new ArrayList<>();
+	int last_fastest_winner_iters = 18000000, num_blue_wins, last_winner_iters = 0;
+	boolean beatReflex = false;
+	double[] winning_combo = null;
+	int battles = 0;
+	LinkedList<Integer> recent_iters = new LinkedList<>();
+
+	void init() throws Throwable {
+		timestamp = (new SimpleDateFormat("M-d_H.mm.s")).format(new Date());
+		r = new Random();
+		double[] best_spawn = evolve();
+		Controller.doBattle(new ReflexAgent(), new NeuralAgent(best_spawn));
+	}
+
+	double[] evolve() throws Throwable {
+		long start = time();
+		
+		//CREATE A RANDOM INITIAL POPULATION
+		mat = new Matrix(mat_size, 291);
+		for(int i = 0; i < mat_size; i++)
+			for(int j = 0; j < num_genes; j++)
+				mat(i)[j] = .03 * r.nextGaussian();
+		
+		//ADD EXTRA PARAM COLUMNS TO TRACK AGENT FITNESS
+		addParams();
+		
+		//TRAIN POPULATION 
+		for(int i = 1; i < 1000000000; i++) {	//SCORE FITNESS every 1000 cycles
+			if (i%10== 0) {
+				track();
+				updateSurvival();
+			}
+			
+			if(beatReflex) {
+				System.out.println(time() - start);
+				break;
+//					return winningCombo;
+			}
+
+			//Get a random double to decide next action
+			double d = r.nextDouble();
+			if(d < .5)								//MUTATE 50%
+				mutate(d);
+			else if ((d >= .5) && (d < .7))			//SCRIMMAGE 20%
+				scrimmage(d);
+			else if ((d >= .7) && (d < .8))			//THE PURGE 10%
+				bestVsWorst();
+			else if ((d >= .8) && (d < 1.0))		//TRAIN VS REFLEX 20%
+				trainVsReflex(d);
+		}
+		printTracker();
+		System.out.println("Elapsed time: " + (time() - start)/1000 + "s");
+		return winning_combo;
+	}
+	
+	void printTracker() throws IOException {
+		FileWriter fw = new FileWriter(new File("tracker.csv"));
+		for(int i = 0; i < tracker.size(); i++)
+			fw.write(tracker.get(i));
+		fw.close();
+		
+		PrintWriter pw = new PrintWriter(new FileWriter("tracker " + timestamp + ".csv"));
+		for(int i = 0; i < tracker.size(); i++) {
+			pw.println(tracker.get(i));
+		}
+		pw.close();
+	}
+	
+	void updateSurvival() {
+		int survive_col = mat.col("SurviveLoss");
+		double ave_fit = mat.columnMean(mat.col("Fitness"));
+		double survival_variance = survive_loss_max - init_survive_loss_rate;
+		double survival_boost = r.nextDouble() * survival_variance/4;
+		for(int i = 0; i < mat_size; i++) {
+			double[] player = mat.row(i);
+			if(player[291] + player[292] > 10) {
+				if(player[mat.col("Fitness")] > 1.1*ave_fit) {
+					player[survive_col] = Math.min(player[survive_col] + survival_boost, survive_loss_max);
+				}
+				else if(player[mat.col("Fitness")] < .9*ave_fit) {
+					player[survive_col] = Math.max(player[survive_col] - survival_boost, survive_loss_min);
+				}	
+			}
+		}
+	}
+
+	void updateFitness(int i, int[] outcome) {
+		double wins = mat(i)[mat.col("Won")];
+		double fitness = (double)((int)(10000000*wins/outcome[1]))/10;
+		mat(i)[mat.col("Fitness")] = fitness;
+	}
+
+	//MUTATE
+	void mutate(double d) {			//d < .4
+		if(d < .1)					//CATASTROPHIC 25% of Mutations
+			catastrophic(d);
+		else {
+			double mutation_level = ave_mut_dev * r.nextGaussian();
+			int row_num = r.nextInt(mat_size);
+			int num_genes_mutated = r.nextInt(num_genes);
+			for(int i = 0; i < num_genes_mutated; i++)
+				mat(row_num)[r.nextInt(num_genes)] += mutation_level;
+		}
+	}
+	
+	void catastrophic(double d) {
+		double[] extra_toes = mat(r.nextInt(mat_size));
+		for(int i = 0; i < num_genes; i++) {
+			extra_toes[i] += r.nextGaussian()*r.nextInt(5);
+		}
+	}
+	
+	void cloneBlueBeater(int hero, int iters) {
+//		System.out.println("winner iters: " + iters);
+		double iters_range = 15000;		//18000 - my target of < 3000
+		iters -= 3000;
+		double clone_scale = 1 - iters /iters_range;
+		int max_clones = 4;
+		int num_clones = (int)((double)max_clones * clone_scale);
+//		System.out.println("clone_scale: " + clone_scale + "  num_clones: " + num_clones);
+		mat.sort(mat.col("Fitness"), false);
+		int lame_guy = mat_size-1;
+		for(int i = 0; i < num_clones; i++) {
+			for(int k = 0; k < num_genes; k++) 
+				mat(lame_guy)[k] = mat(hero)[k];
+			for(int k = num_genes; k < num_genes+ params.length;k++ )
+				mat(lame_guy)[k] = 0.0;
+			mat(lame_guy)[mat.col("SurviveLoss")] = init_survive_loss_rate + .07;
+			lame_guy--;
+		}
+	}
+	
+	void bestVsWorst() throws Exception {
+		mat.sort(mat.col("Fitness"), false);
+		for(int i = 0; i < 5; i++) {
+			int a = mat_size - i -1;
+			int[] outcome = battle(a, i);
+			results(a, i, outcome);
+		}
+	}
+	//BATTLE
+	void scrimmage(double d) throws Exception {
+		for(int i = 0; i < mat.rows()/10; i++) {
+			int a = r.nextInt(mat_size);	//Random Agent from matrix
+			int b = r.nextInt(mat_size);
+			int[] outcome = battle(a, b);
+			results(a, b, outcome);
+		}
+		//		for(int i = 0; i < mat.rows(); i++) {
+//			int a = r.nextInt(mat_size);	//Random Agent from matrix
+//			int[] outcome = battle(a, i);
+//			results(a, i, outcome);
+//		}
+	}
+	
+	void trainVsReflex(double d) throws Exception {
+//		mat.sort(mat.col("Won"), true);
+		for(int i = 0; i < mat_size; i++) {
+			int[] outcome = battle(-1, i);
+			if(outcome[0] != 0) {
+				if(outcome[0] == -1) {
+					mat(i)[mat.col("Won")]++;
+					mat(i)[mat.col("Iters")] += outcome[1];
+					mat(i)[mat.col("RefWins")]++;
+					mat(i)[mat.col("RefIters")]+= outcome[1];
+				}
+				else {
+					mat(i)[mat.col("RefLosses")]++;
+					mat(i)[mat.col("RefIters")]+= outcome[1];
+				}
+			}
+			updateFitness(i, outcome);
+			if(outcome[0] == -1 && !recent_iters.contains(outcome[1])) {
+				if(recent_iters.size() > 3)
+					recent_iters.pop();
+				recent_iters.add(outcome[1]);
+				if(outcome[1] < max_iters_to_declare_win)
+					mat(i)[mat.col("Fitness")]*=1.20;
+				else if(outcome[1] < 9000)
+					mat(i)[mat.col("Fitness")]*=1.10;
+				else if(outcome[1] < 1100)
+					mat(i)[mat.col("Fitness")]*=1.05;
+				last_winner_iters = outcome[1];
+				System.out.println("Beat Reflex    Iters: " + outcome[1]);
+				cloneBlueBeater(i, outcome[1]);
+				if(outcome[1] < last_fastest_winner_iters)
+					winning_combo = getWts(mat(i));
+				num_blue_wins++;
+				if(num_blue_wins > 100 || outcome[1] < 8000) {
+					beatReflex = true;
+					printDoubleArray(mat(i));
+				}
+				break;
+			}
+		}
+	}
+	
+	void results(int a, int b, int[] outcome) {
+		if(outcome[0] != 0) {
+			double d = r.nextDouble();
+			int winner, loser, lived;
+			if(outcome[0] == -1) {
+				winner = a;	//a if -1, b if 1
+				loser = b;
+			}
+			else {			//outcome[0] = 1
+				winner = b;	//b if 1
+				loser = a;
+			}
+			if(d < mat(loser)[mat.col("SurviveLoss")]) {
+				lived = loser;
+				mat(lived)[mat.col("Lost")]++;
+			}
+			else {
+				lived = winner;
+				mat(lived)[mat.col("Won")]++;
+			}
+			
+
+			mat(lived)[mat.col("Fitness")] = mat(lived)[mat.col("Won")]/mat(lived)[mat.col("Iters")];
+			mat(lived)[mat.col("Iters")] += outcome[1];
+			killAndBreed((lived == loser) ? winner : loser);
+			updateFitness(lived, outcome);
+		}
+		else {
+			int one_punished = (r.nextBoolean())? a : b;
+			mat(one_punished)[mat.col("Fitness")] -= ((double)(r.nextInt(4)/100)*mat(one_punished)[mat.col("Fitness")]);
+		}
+	}
+	
+	void killAndBreed(int kill_num) {
+		//Pick 9 random parent candidates. possible_parents[0] is parent a
+		int[] possible_parents = new int[dating_pool_size + 1];
+		possible_parents = ThreadLocalRandom.current().ints(0, mat_size).distinct().limit(dating_pool_size + 1).toArray();
+		double[] a = mat(possible_parents[0]);		//Parent 1
+		double[] b = new double[291];					//dating pool
+
+		int b_num = 0, best_score = 0;
+
+		//Compare similarity !!!!!!!---FIX only comparing sign
+		for(int i = 1; i < 9; i++) {
+			int score = 0;
+			for(int k = 0; k < 291; k++) {
+				if((a[k] > 0 && mat(i)[k] > 0)||(a[k] < 0 && mat(i)[k] < 0))
+					score++;
+			}
+			if(score >= best_score)
+				b_num = possible_parents[i];
+		}
+		b = mat(b_num);
+		for(int i = 0; i < 291; i+=3) {								//REPLACE(kill) genes in sets of 3
+			mat(kill_num)[i] = (r.nextBoolean()) ? a[i] : b[i];
+			mat(kill_num)[i+1] = (r.nextBoolean()) ? a[i+1] : b[i+1];
+			mat(kill_num)[i+2] = (r.nextBoolean()) ? a[i+2] : b[i+2];
+		}
+
+		for(int i = 291; i < mat_size + params.length; i++)			//RESET params
+			mat(kill_num)[i] = 0.0;
+		mat(kill_num)[mat.col("SurviveLoss")] = init_survive_loss_rate;		//WIN_SURVIVE back to default
+	}
+	
+	int[] battle(int blue, int red) throws Exception {		//SHORTCUT TO Controller.doBattle
+		battles++;
+		IAgent a = (blue == -1) ? new ReflexAgent() : new NeuralAgent(getWts(mat(blue)));
+		IAgent b = new NeuralAgent(getWts(mat(red)));
+		return Controller.doBattleNoGui(a, b);
+	}
